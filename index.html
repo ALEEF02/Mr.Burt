@@ -1,0 +1,782 @@
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<title>Mr. Burt Pop Quizzes</title>
+	<link href='http://fonts.googleapis.com/css?family=Cabin' rel='stylesheet' type='text/css'>
+	<meta name="description" content="">
+	<meta name="author" content="">
+
+	<style>
+	#wrap {
+		width: 800px;
+		margin-left: auto;
+		margin-right: auto;
+	}
+	h1 {
+		font-size: 16px;
+		color: #333;
+		background-color: #DDD;
+		border-bottom: 1px #999 solid;
+		text-align: center;
+	}
+	body {
+		font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+		color: #333;
+		padding: 20px;
+	}
+	.viscanvas { 
+		border: 1px solid #555;
+	}
+	.pane {
+		width: 420px;
+		display: inline-block;
+		vertical-align: top;
+	}
+	input[type="submit"] {
+		margin: 3px;
+	}
+	
+	
+	.layer {
+		border: 1px solid #999;
+		margin-bottom: 5px;
+		text-align: left;
+		padding: 10px;
+	}
+	.layer_act {
+		width: 450px;
+		float: right;
+	}
+	.ltconv {
+		background-color: #FDD;
+	}
+	.ltrelu {
+		background-color: #FDF;
+	}
+	.lttanh {
+		background-color: #FED;
+	}
+	.ltsigmoid {
+		background-color: #EFD;
+	}
+	.ltpool {
+		background-color: #DDF;
+	}
+	.ltsoftmax {
+		background-color: #FFD;
+	}
+	.ltfc {
+		background-color: #DFF;
+	}
+	.ltlrn {
+		background-color: #DFD; 
+	}
+	.ltdropout {
+		background-color: #AAA;  
+	}
+	.ltitle {
+		color: #333;
+		font-size: 18px;
+	}
+	.actmap {
+		margin: 1px;
+	}
+	#trainstats {
+		text-align: left;
+	}
+	.clear {
+		clear: both;
+	}
+	.secpart {
+		width: 400px;
+		float: left;
+	}
+	#lossgraph {
+		/*border: 1px solid #F0F;*/
+		width: 100%;
+	}
+	.probsdiv canvas {
+		float: left;
+	}
+	.probsdiv {
+		height: 60px;
+		width: 180px;
+		display: inline-block;
+		font-size: 12px;
+		box-shadow: 0px 0px 2px 2px #EEE;
+		margin: 5px;
+		padding: 5px;
+		color: black;
+	}
+	.pp {
+		margin: 1px;
+		padding: 1px;
+	}
+	#testset_acc {
+		margin-bottom: 200px;
+	}
+	</style>
+
+	<script src="convnet.js"></script>
+	<script src="deepqlearn.js"></script>
+	<script src="vis.js"></script>
+	<script src="util.js"></script>
+
+    <div>
+		<input id="buttontp" type="submit" value="pause" onclick="toggle_pause();" style="width: 100px; height:30px; background-color: #FCC;"/>
+		<div id="eta"></div>
+	</div>
+	<div id="allGraphs">
+		<div class="Average">
+			<h1>Average Training Accuracy vs. Number of Examples Seen</h1>
+			<canvas id="trainingGraphAvg" width="950" height="600"></canvas>
+			<br>
+			<h1>Average Testing Accuracy vs. Number of Examples Seen</h1>
+			<canvas id="testingGraphAvg" width="950" height="600"></canvas>
+			<br>
+		</div>
+	</div>
+<script type="text/javascript">
+//Enter Page Data
+var my_data = [
+    {"pages":[0,9,5,11,0],"tests":[-1,0,0,0,0],"quizzes":[0,1,0,1]},
+    {"pages":[11,7,8,8,0],"tests":[0,0,0,0,0],"quizzes":[1,0,0,1]},
+    {"pages":[9,6,11,5,0],"tests":[1,0,0,0,0],"quizzes":[0,0,1,0]},
+    {"pages":[5,11,9,7,0],"tests":[0,0,0,0,0],"quizzes":[0,1,0,1]},
+    {"pages":[9,4,3,5,0],"tests":[0,0,0,0,0],"quizzes":[1,0,0,1]},
+    {"pages":[8,0,10,6,10],"tests":[1,0,-1,0,0],"quizzes":[0,0,0,0]},
+    {"pages":[4,5,4,3,0],"tests":[0,0,0,0,0],"quizzes":[0,1,0,1]},
+    {"pages":[6,4,7,9,0],"tests":[0,0,0,0,0],"quizzes":[0,1,0,1]},
+    {"pages":[8,7,12,12,0],"tests":[0,0,0,0,-1],"quizzes":[0,0,1,0]},
+    {"pages":[0,6,8,3,0],"tests":[-1,0,0,0,0],"quizzes":[0,0,1,0]},
+    {"pages":[0,7,10,7,0],"tests":[-1,0,0,0,0],"quizzes":[0,0,1,1]},
+    {"pages":[7,5,4,8,0],"tests":[1,0,0,0,0],"quizzes":[0,1,0,0]},
+	{"pages":[4,11,8,0,0],"tests":[0,0,0,0,0],"quizzes":[0,1,0,0]},
+    {"pages":[8,6,7,11,0],"tests":[0,0,0,0,0],"quizzes":[0,0,1,1]},
+    {"pages":[8,6,11,4,0],"tests":[1,0,0,0,0],"quizzes":[0,0,1,0]},
+	{"pages":[17,9,8,7,0],"tests":[0,0,0,0,0],"quizzes":[1,0,0,1]}
+];
+
+//Enter this week's pages to be predicted
+var predPages = {"pages":[9,5,10,8,0],"tests":[0,0,0,0,0]};
+
+var totalIt = 4000; //Number of iterations to run per net
+var logFreq = 10; //How often to log and graph the training and testing data
+var trainTestRatio = 0.1; //What percent of the data to use as test data, in decimal form (Ex: 0.1 = 10%)
+var LR = 0.01; //learning rate
+var BS = 8; //batch size
+var L2 = 0.001; //L2 weight decay
+
+var netBest;
+var netBestName;
+var netBestNum = 0;
+var netBestIt = 0;
+var netBestComb = 9999;
+var maxPgs = 0;
+var it = 0;
+var logTotal = 0;
+var trainingLossAvg = 0;
+var testingLossAvg = 0;
+var trainingGraphs = [];
+var testingGraphs = [];
+var start;
+var finish;
+var volTestPages = [];
+var testPages = [];
+var etaDiv = document.getElementById('eta');
+
+//Randomly select test values
+for (var p = 0; p < (Math.ceil(my_data.length * trainTestRatio)); p++) {
+	var rand = Math.floor(Math.random() * my_data.length);
+	testPages.push(my_data[rand]);
+	my_data.splice(rand, 1);
+}
+console.log("Test Values: " + JSON.stringify(testPages));
+
+//Turn page data into a max 1 value
+for (var i = 0; i < my_data.length; i++) {
+	for (var voi = 0; voi < 5; voi++) {
+		if (my_data[i].pages[voi] > maxPgs) {
+			maxPgs = my_data[i].pages[voi];
+		}
+	}
+	for (var voi = 0; voi < 5; voi++) {
+		if (my_data[i].pages[voi] != "-1") {
+			my_data[i].pages[voi] = (my_data[i].pages[voi] / maxPgs).toFixed(3);
+		}
+	}
+	maxPgs = 0;
+}
+
+//Turn test data into a max 1 value and format it into a Convnetjs readable volume
+for (var i = 0; i < testPages.length; i++) {
+	maxPgs = 0;
+	for (var voi = 0; voi < 5; voi++) {
+		if (testPages[i].pages[voi] > maxPgs) {
+			maxPgs = testPages[i].pages[voi];
+		}
+	}
+	testPages[i].pages[0] = (testPages[i].pages[0] / maxPgs).toFixed(3);
+	testPages[i].pages[1] = (testPages[i].pages[1] / maxPgs).toFixed(3);
+	testPages[i].pages[2] = (testPages[i].pages[2] / maxPgs).toFixed(3);
+	testPages[i].pages[3] = (testPages[i].pages[3] / maxPgs).toFixed(3);
+	testPages[i].pages[4] = (testPages[i].pages[4] / maxPgs).toFixed(3);
+	
+	var volPages = new convnetjs.Vol(1,1,10,0.0);
+	volPages.w[0] = testPages[i].pages[0];
+	volPages.w[1] = testPages[i].pages[1];
+	volPages.w[2] = testPages[i].pages[2];
+	volPages.w[3] = testPages[i].pages[3];
+	volPages.w[4] = testPages[i].pages[4];
+	volPages.w[5] = testPages[i].tests[0];
+	volPages.w[6] = testPages[i].tests[1];
+	volPages.w[7] = testPages[i].tests[2];
+	volPages.w[8] = testPages[i].tests[3];
+	volPages.w[9] = testPages[i].tests[4];
+	volTestPages.push(volPages);
+}
+
+//Turn prediction data into a max 1 value and format it into a Convnetjs readable volume
+maxPgs = 0;
+for (var voi = 0; voi < 5; voi++) {
+	if (predPages.pages[voi] > maxPgs) {
+		maxPgs = predPages.pages[voi];
+	}
+}
+predPages.pages[0] = (predPages.pages[0] / maxPgs).toFixed(3);
+predPages.pages[1] = (predPages.pages[1] / maxPgs).toFixed(3);
+predPages.pages[2] = (predPages.pages[2] / maxPgs).toFixed(3);
+predPages.pages[3] = (predPages.pages[3] / maxPgs).toFixed(3);
+predPages.pages[4] = (predPages.pages[4] / maxPgs).toFixed(3);
+var volPred = new convnetjs.Vol(1,1,10,0.0);
+volPred.w[0] = predPages.pages[0];
+volPred.w[1] = predPages.pages[1];
+volPred.w[2] = predPages.pages[2];
+volPred.w[3] = predPages.pages[3];
+volPred.w[4] = predPages.pages[4];
+volPred.w[5] = predPages.tests[0];
+volPred.w[6] = predPages.tests[1];
+volPred.w[7] = predPages.tests[2];
+volPred.w[8] = predPages.tests[3];
+volPred.w[9] = predPages.tests[4];
+
+//Define arrays
+var allLayers = [];
+var allNets = [];
+var layer_defs = [];
+var trainer_defs = [];
+var allTrainers = [];
+var trainerTrainingLossTotals = [];
+var trainerTestingLossTotals = [];
+var layerTrainingLossTotals = [];
+var layerTestingLossTotals = [];
+
+//Define legend for the different layer combos
+var legend = ['S + S + R', 'T + T + R', 'R + S + R', 'T + S + T', 'R + R + R' , 'R + R', 'R', 'Linear'];
+
+layer_defs.push({type:'input', out_sx:1, out_sy:1, out_depth:10});
+layer_defs.push({type:'fc', num_neurons:12, activation:'sigmoid'});
+layer_defs.push({type:'fc', num_neurons:12, activation:'sigmoid'});
+layer_defs.push({type:'fc', num_neurons:11, activation:'relu'});
+layer_defs.push({type:'regression', num_neurons:4});
+allLayers.push(layer_defs);
+layer_defs = [];
+
+layer_defs.push({type:'input', out_sx:1, out_sy:1, out_depth:10});
+layer_defs.push({type:'fc', num_neurons:12, activation:'tanh'});
+layer_defs.push({type:'fc', num_neurons:12, activation:'tanh'});
+layer_defs.push({type:'fc', num_neurons:11, activation:'relu'});
+layer_defs.push({type:'regression', num_neurons:4});
+allLayers.push(layer_defs);
+layer_defs = [];
+
+layer_defs.push({type:'input', out_sx:1, out_sy:1, out_depth:10});
+layer_defs.push({type:'fc', num_neurons:12, activation:'relu'});
+layer_defs.push({type:'fc', num_neurons:12, activation:'sigmoid'});
+layer_defs.push({type:'fc', num_neurons:11, activation:'relu'});
+layer_defs.push({type:'regression', num_neurons:4});
+allLayers.push(layer_defs);
+layer_defs = [];
+
+layer_defs.push({type:'input', out_sx:1, out_sy:1, out_depth:10});
+layer_defs.push({type:'fc', num_neurons:12, activation:'tanh'});
+layer_defs.push({type:'fc', num_neurons:12, activation:'sigmoid'});
+layer_defs.push({type:'fc', num_neurons:12, activation:'tanh'});
+layer_defs.push({type:'regression', num_neurons:4});
+allLayers.push(layer_defs);
+layer_defs = [];
+
+layer_defs.push({type:'input', out_sx:1, out_sy:1, out_depth:10});
+layer_defs.push({type:'fc', num_neurons:12, activation:'relu'});
+layer_defs.push({type:'fc', num_neurons:12, activation:'relu'});
+layer_defs.push({type:'fc', num_neurons:12, activation:'relu'});
+layer_defs.push({type:'regression', num_neurons:4});
+allLayers.push(layer_defs);
+layer_defs = [];
+
+layer_defs.push({type:'input', out_sx:1, out_sy:1, out_depth:10});
+layer_defs.push({type:'fc', num_neurons:12, activation:'relu'});
+layer_defs.push({type:'fc', num_neurons:12, activation:'relu'});
+layer_defs.push({type:'regression', num_neurons:4});
+allLayers.push(layer_defs);
+layer_defs = [];
+
+layer_defs.push({type:'input', out_sx:1, out_sy:1, out_depth:10});
+layer_defs.push({type:'fc', num_neurons:12, activation:'relu'});
+layer_defs.push({type:'regression', num_neurons:4});
+allLayers.push(layer_defs);
+layer_defs = [];
+
+layer_defs.push({type:'input', out_sx:1, out_sy:1, out_depth:10});
+layer_defs.push({type:'fc', num_neurons:12});
+layer_defs.push({type:'fc', num_neurons:12});
+layer_defs.push({type:'regression', num_neurons:4});
+allLayers.push(layer_defs);
+layer_defs = [];
+
+//Define the different trainers
+trainer_defs.push([{learning_rate:LR, l2_decay:L2}, "Standard"]);
+trainer_defs.push([{learning_rate:LR, method: 'sgd', momentum: 0.0, batch_size:BS, l2_decay:L2}, "SGD"]);
+trainer_defs.push([{learning_rate:LR, method: 'sgd', momentum: 0.9, batch_size:BS, l2_decay:L2}, "SGD + Momentum"]);
+trainer_defs.push([{learning_rate:LR, method: 'adagrad', eps: 1e-6, batch_size:BS, l2_decay:L2}, "Adagrad"]);
+trainer_defs.push([{learning_rate:LR, method: 'windowgrad', eps: 1e-6, ro: 0.95, batch_size:BS, l2_decay:L2}, "Windowgrad"]);
+trainer_defs.push([{learning_rate:1.0, method: 'adadelta', eps: 1e-6, ro:0.95, batch_size:BS, l2_decay:L2}, "Adadelta"]);
+
+//For each trainer...
+for (var t = 0; t < trainer_defs.length; t++) {
+	trainerTrainingLossTotals.push(0);
+	trainerTestingLossTotals.push(0);
+	var nets = [];
+	var trainers = [];
+	//For each layer combo within the trainer...
+	for (var q = 0; q < allLayers.length; q++) {
+		//Make a new net with the layer combo & trainer with the net
+		if (t === 0) {
+			layerTrainingLossTotals.push(0);
+			layerTestingLossTotals.push(0);
+		}
+		var net = new convnetjs.Net();
+		net.makeLayers(allLayers[q]);
+		var trainer = new convnetjs.SGDTrainer(net, trainer_defs[t][0]);
+		nets.push(net);
+		trainers.push(trainer);
+	}
+	//Push the created net & trainer to a global array
+	allNets.push(nets);
+	allTrainers.push(trainers);
+	
+	//Crease a new Training and Testing graph and push to a global array
+	var trainingGraph = new cnnvis.MultiGraph(legend, {miny: 0, maxy: 4});
+	var testingGraph = new cnnvis.MultiGraph(legend, {miny: 0, maxy: 4});
+	trainingGraphs.push(trainingGraph);
+	testingGraphs.push(testingGraph);
+	if (t == trainer_defs.length - 1) {
+		var trainingGraph = new cnnvis.MultiGraph(legend, {miny: 0, maxy: 4});
+		var testingGraph = new cnnvis.MultiGraph(legend, {miny: 0, maxy: 4});
+		trainingGraphs.push(trainingGraph);
+		testingGraphs.push(testingGraph);
+	}
+	
+	//Create a new div element with the 2 new graphs
+	var div = document.createElement('div');
+	div.className = trainer_defs[t][1];
+	div.innerHTML = '<h1>' + trainer_defs[t][1] + ' Training Accuracy vs. Number of Examples Seen</h1><canvas id="trainingGraph' + t + '" width="950" height="600"></canvas><br><h1>' + trainer_defs[t][1] + ' Testing Accuracy vs. Number of Examples Seen</h1><canvas id="testingGraph' + t + '" width="950" height="600"></canvas><br>';
+	document.getElementById('allGraphs').appendChild(div);
+}
+
+//Draw and update the graphs
+function drawGraphs(graphNum, iteration, lossTrain, lossTest, avg) {
+	if (avg === false) {
+		trainingGraphs[graphNum].add(iteration, lossTrain);
+		trainingGraphs[graphNum].drawSelf(document.getElementById("trainingGraph" + graphNum));
+		testingGraphs[graphNum].add(iteration, lossTest);
+		testingGraphs[graphNum].drawSelf(document.getElementById("testingGraph" + graphNum));
+	} else {
+		trainingGraphs[trainer_defs.length].add(iteration, lossTrain);
+		trainingGraphs[trainer_defs.length].drawSelf(document.getElementById("trainingGraph" + graphNum));
+		testingGraphs[trainer_defs.length].add(iteration, lossTest);
+		testingGraphs[trainer_defs.length].drawSelf(document.getElementById("testingGraph" + graphNum));
+	}
+}
+
+var totalIterations = (totalIt * allLayers.length * allTrainers.length);
+var offsetStart;
+var offsetStop;
+var timeOffset = 0;
+var paused = false;
+	
+//For each iteration of the net...
+function doIteration() {
+	//If the paused button is pressed, stop
+	if(paused) return;
+	//If all iterations have been run...
+	if (it > totalIt) {
+		//Stop running future interations and calculate the prediction
+		finish = Date.now();
+		clearInterval(run);
+		calcPred();
+	} else {
+		var layerTrainingLossItAvg = [];
+		var layerTestingLossItAvg = [];
+		for (var re = 0; re < allLayers.length; re++) {
+			layerTrainingLossItAvg.push(0);
+			layerTestingLossItAvg.push(0);
+		}
+		//For each trainer...
+		for (var trainerIt = 0; trainerIt < trainer_defs.length; trainerIt++) {
+			//Define temporary arrays to hold loss data
+			var pred;
+			var trainLosses = [];
+			var testLosses = [];
+			var trainingLoss = 0;
+			var testLoss = 0;
+			//For each net with layer combo...
+			for (var netIt = 0; netIt < allNets[trainerIt].length; netIt++) {
+				//For each week in the page data set...
+				for (var i = 0; i < my_data.length; i++) {
+					//Format the page data into a Convnetjs readable volume
+					var x = new convnetjs.Vol(1,1,10,0.0);
+					x.w[0] = my_data[i].pages[0];
+					x.w[1] = my_data[i].pages[1];
+					x.w[2] = my_data[i].pages[2];
+					x.w[3] = my_data[i].pages[3];
+					x.w[4] = my_data[i].pages[4];
+					x.w[5] = my_data[i].tests[0];
+					x.w[6] = my_data[i].tests[1];
+					x.w[7] = my_data[i].tests[2];
+					x.w[8] = my_data[i].tests[3];
+					x.w[9] = my_data[i].tests[4];
+					//Set the y value to the output quizzes
+					var y = my_data[i].quizzes;
+					//Get the prediction data for later
+					pred = allNets[trainerIt][netIt].forward(x);
+					//Train the network with the page data
+					allTrainers[trainerIt][netIt].train(x, y);
+					
+					//On every margin of iterations
+					if (it % logFreq === 0) {
+						if (i === 0) {
+							trainingLoss = 0;
+							testLoss = 0;
+						}
+						
+						//For each output...
+						for (var p = 0; p < my_data[i].quizzes.length; p++) {
+							//Calculate training loss data then add it to the total
+							trainingLoss += Math.abs(pred.w[p] - my_data[i].quizzes[p]);
+						}
+						
+						if (i == my_data.length - 1) {
+							//For each testing data set
+							for (var ee = 0; ee < testPages.length; ee++) {
+								//Calculate test loss data then add it to the total
+								var predTest = allNets[trainerIt][netIt].forward(volTestPages[ee]);
+								for (var r = 0; r < testPages[ee].quizzes.length; r++) {
+									testLoss += Math.abs(predTest.w[r] - testPages[ee].quizzes[r]);
+								}
+							}
+							logTotal++;
+							//Find loss averages
+							trainingLoss /= (i+1);
+							testLoss /= (i+1);
+							//Push the loss values to a global array
+							trainLosses.push(trainingLoss);
+							testLosses.push(testLoss);
+							trainerTrainingLossTotals[trainerIt] += trainingLoss;
+							trainerTestingLossTotals[trainerIt] += testLoss;
+							layerTrainingLossTotals[netIt] += trainingLoss;
+							layerTestingLossTotals[netIt] += testLoss;
+							layerTrainingLossItAvg[netIt] += trainingLoss;
+							layerTestingLossItAvg[netIt] += testLoss;
+							//If the current iteration has the lowest loss rate
+							if (trainingLoss + testLoss < netBestComb) {
+								//Sets all the best stats to the current net stats
+								netBest = JSON.stringify(allNets[trainerIt][netIt].toJSON());
+								netBestComb = (trainingLoss + testLoss);
+								netBestNum = netIt;
+								netBestName = trainer_defs[trainerIt][1];
+								netBestIt = it;
+							}
+						}
+					}
+				}
+			}
+			//On every margin of iterations, redraw the graph
+			if (it % logFreq === 0) {
+				//Calculate ETA
+				var runningMs = ((Date.now() - start)) - timeOffset;
+				var etaMs = runningMs * (totalIt / it);
+				var remainingMs = etaMs - runningMs;
+				var remainingMin = Math.floor(Math.floor(remainingMs / 1000) / 60);
+				var remainingSec = Math.floor(remainingMs / 1000) - (remainingMin * 60);
+				etaDiv.innerHTML = ("ETA: " + remainingMin + " minutes, " + remainingSec + " seconds");
+				drawGraphs(trainerIt, it, trainLosses, testLosses, false);
+			}
+		}
+		for (var t = 0; t < layerTrainingLossItAvg.length; t++) {
+			layerTrainingLossItAvg[t] /= allTrainers.length;
+			layerTestingLossItAvg[t] /= allTrainers.length;
+		}
+		if (it % logFreq === 0) {
+			drawGraphs("Avg", it, layerTrainingLossItAvg, layerTestingLossItAvg, true);
+		}
+		it++;
+	}
+}
+
+//Run iterations as doIteration
+start = Date.now();
+var run = setInterval(doIteration, 0);
+
+function calcPred() {
+	console.log("Restoring " + netBestName + ", net " + legend[netBestNum] + ", iteration " + netBestIt + " with best combined loss of " + netBestComb);
+	//Calculate various statistics
+	var totalTime = ((finish - start) / 1000) - timeOffset;
+    logTotal /= (allTrainers.length);
+	for (var t = 0; t < trainerTrainingLossTotals.length; t++) {
+		trainerTrainingLossTotals[t] /= (logTotal);
+		trainerTestingLossTotals[t] /= (logTotal);
+		trainingLossAvg += (trainerTrainingLossTotals[t] + trainerTestingLossTotals[t]);
+	}
+	for (var t = 0; t < layerTrainingLossTotals.length; t++) {
+		layerTrainingLossTotals[t] /= (logTotal);
+		layerTestingLossTotals[t] /= (logTotal);
+		testingLossAvg += (layerTrainingLossTotals[t] + layerTestingLossTotals[t]);
+	}
+	
+	trainingLossAvg /= (trainerTrainingLossTotals.length * 2);
+	testingLossAvg /= (layerTrainingLossTotals.length * 2);
+	
+	//Restore the net with the lowest loss rate
+	var predNet = new convnetjs.Net();
+	var temp = JSON.parse(netBest);
+	predNet.fromJSON(temp);
+	net = predNet;
+
+	/*str = JSON.stringify(net.toJSON());
+	console.log("Net: " + str);
+	//document.write("Net: " + str);*/
+
+	//Log predictions in console
+	var predicted_values = predNet.forward(volPred);
+	console.log("Prediction: \nTuesday: " + (predicted_values.w[0] * 100).toFixed(1) + "%\nWednesday: " + (predicted_values.w[1] * 100).toFixed(1) + "%\nThursday: " + (predicted_values.w[2] * 100).toFixed(1) + "%\nFriday: " + (predicted_values.w[3] * 100).toFixed(1) + "%");
+	console.log("Raw: " + JSON.stringify(predicted_values));
+	
+	//Display predictions in the document
+	var bodyDiv = document.getElementById('egdiv');
+	var outputString = ("<br>" + "Restoring " + netBestName + ", net " + legend[netBestNum] + ", iteration " + netBestIt + " with best combined loss of " + netBestComb + 
+		"<br>Prediction:<br>&nbsp;&nbsp;&nbsp;&nbsp;Tuesday: " + (predicted_values.w[0] * 100).toFixed(1) + "%<br>&nbsp;&nbsp;&nbsp;&nbsp;Wednesday: " + (predicted_values.w[1] * 100).toFixed(1) + "%<br>&nbsp;&nbsp;&nbsp;&nbsp;Thursday: " + (predicted_values.w[2] * 100).toFixed(1) + "%<br>&nbsp;&nbsp;&nbsp;&nbsp;Friday: " + (predicted_values.w[3] * 100).toFixed(1) + "%<br>" +
+		"Stats:<br>&nbsp;&nbsp;&nbsp;&nbsp;Ran " + totalIterations + " iterations in " + totalTime + " seconds (" + Math.round(totalIterations / totalTime) + " iterations per second)<br>&nbsp;&nbsp;&nbsp;&nbsp;Loss:<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Average:<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Training: " + trainingLossAvg.toFixed(2) + "<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Testing: " + testingLossAvg.toFixed(2) + "<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Nets:<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
+		
+	for (var t = 0; t < trainerTrainingLossTotals.length; t++) {
+		outputString += (trainer_defs[t][1] + "<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Training: " + trainerTrainingLossTotals[t].toFixed(2) + " Testing: " + trainerTestingLossTotals[t].toFixed(2));
+		if (t == (trainerTrainingLossTotals.length - 1)) {
+			outputString += "<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Node Combos:<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+		} else {
+			outputString += "<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+		}
+	}
+	for (var t = 0; t < layerTrainingLossTotals.length; t++) {
+		outputString += (legend[t] + "<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Training: " + layerTrainingLossTotals[t].toFixed(2) + " Testing: " + layerTestingLossTotals[t].toFixed(2) + "<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
+	}
+	
+	bodyDiv.innerHTML = (outputString);
+	
+	var vis_elt = document.getElementById("visnet");
+    visualize_activations(net, vis_elt);
+}
+
+
+
+//Neuron Vis
+var maxmin = cnnutil.maxmin;
+var f2t = cnnutil.f2t;
+
+// elt is the element to add all the canvas activation drawings into
+// A is the Vol() to use
+// scale is a multiplier to make the visualizations larger. Make higher for larger pictures
+// if grads is true then gradients are used instead
+var draw_activations = function(elt, A, scale, grads) {
+
+  var s = scale || 2; // scale
+  var draw_grads = false;
+  if(typeof(grads) !== 'undefined') draw_grads = grads;
+
+  // get max and min activation to scale the maps automatically
+  var w = draw_grads ? A.dw : A.w;
+  var mm = maxmin(w);
+
+  // create the canvas elements, draw and add to DOM
+  for(var d=0;d<A.depth;d++) {
+
+    var canv = document.createElement('canvas');
+    canv.className = 'actmap';
+    var W = A.sx * s;
+    var H = A.sy * s;
+    canv.width = W;
+    canv.height = H;
+    var ctx = canv.getContext('2d');
+    var g = ctx.createImageData(W, H);
+
+    for(var x=0;x<A.sx;x++) {
+      for(var y=0;y<A.sy;y++) {
+        if(draw_grads) {
+          var dval = Math.floor((A.get_grad(x,y,d)-mm.minv)/mm.dv*255);
+        } else {
+          var dval = Math.floor((A.get(x,y,d)-mm.minv)/mm.dv*255);  
+        }
+        for(var dx=0;dx<s;dx++) {
+          for(var dy=0;dy<s;dy++) {
+            var pp = ((W * (y*s+dy)) + (dx + x*s)) * 4;
+            for(var i=0;i<3;i++) { g.data[pp + i] = dval; } // rgb
+            g.data[pp+3] = 255; // alpha channel
+          }
+        }
+      }
+    }
+    ctx.putImageData(g, 0, 0);
+    elt.appendChild(canv);
+  }  
+}
+
+var visualize_activations = function(net, elt) {
+
+  // clear the element
+  elt.innerHTML = "";
+
+  // show activations in each layer
+  var N = net.layers.length;
+  for(var i=0;i<N;i++) {
+    var L = net.layers[i];
+
+    var layer_div = document.createElement('div');
+
+    // visualize activations
+    var activations_div = document.createElement('div');
+    activations_div.appendChild(document.createTextNode('Activations:'));
+    activations_div.appendChild(document.createElement('br'));
+    activations_div.className = 'layer_act';
+    var scale = 10;
+    if(L.layer_type==='softmax' || L.layer_type==='fc') scale = 10; // for softmax
+    draw_activations(activations_div, L.out_act, scale);
+
+    // visualize data gradients
+    if(L.layer_type !== 'softmax') {
+      var grad_div = document.createElement('div');
+      grad_div.appendChild(document.createTextNode('Baises:'));
+      grad_div.appendChild(document.createElement('br'));
+      grad_div.className = 'layer_grad';
+      var scale = 10;
+      if(L.layer_type==='softmax' || L.layer_type==='fc') {
+		scale = 10; // for softmax
+		draw_activations(grad_div, L.biases, scale);
+      } else {
+		draw_activations(grad_div, L.out_act, scale, true);
+	  }
+      activations_div.appendChild(grad_div);
+    }
+
+    // visualize filters if they are of reasonable size
+    if(L.layer_type === 'conv') {
+      var filters_div = document.createElement('div');
+      if(L.filters[0].sx>3) {
+        // actual weights
+        filters_div.appendChild(document.createTextNode('Weights:'));
+        filters_div.appendChild(document.createElement('br'));
+        for(var j=0;j<L.filters.length;j++) {
+          filters_div.appendChild(document.createTextNode('('));
+          draw_activations(filters_div, L.filters[j], 2);
+          filters_div.appendChild(document.createTextNode(')'));
+        }
+        // gradients
+        filters_div.appendChild(document.createElement('br'));
+        filters_div.appendChild(document.createTextNode('Weight Gradients:'));
+        filters_div.appendChild(document.createElement('br'));
+        for(var j=0;j<L.filters.length;j++) {
+          filters_div.appendChild(document.createTextNode('('));
+          draw_activations(filters_div, L.filters[j], 2, true);
+          filters_div.appendChild(document.createTextNode(')'));
+        }
+      } else {
+        filters_div.appendChild(document.createTextNode('Weights hidden, too small'));
+      }
+      activations_div.appendChild(filters_div);
+    }
+    layer_div.appendChild(activations_div);
+
+    // print some stats on left of the layer
+    layer_div.className = 'layer ' + 'lt' + L.layer_type;
+    var title_div = document.createElement('div');
+    title_div.className = 'ltitle'
+    var t = L.layer_type + ' (' + L.out_sx + 'x' + L.out_sy + 'x' + L.out_depth + ')';
+    title_div.appendChild(document.createTextNode(t));
+    layer_div.appendChild(title_div);
+
+    if(L.layer_type==='conv') {
+      var t = 'filter size ' + L.filters[0].sx + 'x' + L.filters[0].sy + 'x' + L.filters[0].depth + ', stride ' + L.stride;
+      layer_div.appendChild(document.createTextNode(t));
+      layer_div.appendChild(document.createElement('br'));
+    }
+    if(L.layer_type==='pool') {
+      var t = 'pooling size ' + L.sx + 'x' + L.sy + ', stride ' + L.stride;
+      layer_div.appendChild(document.createTextNode(t));
+      layer_div.appendChild(document.createElement('br'));
+    }
+
+    // find min, max activations and display them
+    var mma = maxmin(L.out_act.w);
+    var t = 'max activation: ' + f2t(mma.maxv) + ', min: ' + f2t(mma.minv);
+    layer_div.appendChild(document.createTextNode(t));
+    layer_div.appendChild(document.createElement('br'));
+
+    var mma = maxmin(L.out_act.dw);
+    var t = 'max gradient: ' + f2t(mma.maxv) + ', min: ' + f2t(mma.minv);
+    layer_div.appendChild(document.createTextNode(t));
+    layer_div.appendChild(document.createElement('br'));
+
+    // number of parameters
+    if(L.layer_type==='conv') {
+      var tot_params = L.sx*L.sy*L.in_depth*L.filters.length + L.filters.length;
+      var t = 'parameters: ' + L.filters.length + 'x' + L.sx + 'x' + L.sy + 'x' + L.in_depth + '+' + L.filters.length + ' = ' + tot_params;
+      layer_div.appendChild(document.createTextNode(t));
+      layer_div.appendChild(document.createElement('br'));
+    }
+    if(L.layer_type==='fc') {
+      var tot_params = L.num_inputs*L.filters.length + L.filters.length;
+      var t = 'parameters: ' + L.filters.length + 'x' + L.num_inputs + '+' + L.filters.length + ' = ' + tot_params;
+      layer_div.appendChild(document.createTextNode(t));
+      layer_div.appendChild(document.createElement('br'));
+    }
+
+    // css madness needed here...
+    var clear = document.createElement('div');
+    clear.className = 'clear';
+    layer_div.appendChild(clear);
+	var visHead = document.getElementById('netHead').style.display = 'block';
+    elt.appendChild(layer_div);
+  }
+}
+
+var toggle_pause = function() {
+	paused = !paused;
+	var btn = document.getElementById('buttontp');
+	if (paused) {
+		btn.value = 'resume';
+		offsetStart = Date.now();
+	} else {
+		btn.value = 'pause';
+		offsetStop = Date.now();
+		timeOffset += ((offsetStop - offsetStart) / 1000);
+	}
+}
+</script>
+	</head>
+	<div class="divsec">
+		<h1 id="netHead" style="display:none">Network Visualization</h1>
+		<div id="visnet"></div>
+	</div>
+	<body>
+		<div id="egdiv"></div>
+	</body>
+</html>
