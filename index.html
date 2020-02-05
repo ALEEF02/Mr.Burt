@@ -155,11 +155,13 @@ var my_data = [
 	{"pages":[4,11,8,0,0],"tests":[0,0,0,0,0],"quizzes":[0,1,0,0]},
     {"pages":[8,6,7,11,0],"tests":[0,0,0,0,0],"quizzes":[0,0,1,1]},
     {"pages":[8,6,11,4,0],"tests":[1,0,0,0,0],"quizzes":[0,0,1,0]},
-	{"pages":[17,9,8,7,0],"tests":[0,0,0,0,0],"quizzes":[1,0,0,1]}
+	{"pages":[17,9,8,7,0],"tests":[0,0,0,0,0],"quizzes":[1,0,0,1]},
+	{"pages":[9,5,10,8,0],"tests":[0,0,0,0,0],"quizzes":[0,1,1,0]},
+	{"pages":[0,0,8,4,0],"tests":[-1,0,0,0,0],"quizzes":[0,0,0,1]}
 ];
 
 //Enter this week's pages to be predicted
-var predPages = {"pages":[9,5,10,8,0],"tests":[0,0,0,0,0]};
+var predPages = {"pages":[5,11,5,12,0],"tests":[0,0,0,0,0]};
 
 var totalIt = 4000; //Number of iterations to run per net
 var logFreq = 10; //How often to log and graph the training and testing data
@@ -505,7 +507,7 @@ function doIteration() {
 			//On every margin of iterations, redraw the graph
 			if (it % logFreq === 0) {
 				//Calculate ETA
-				var runningMs = ((Date.now() - start)) - timeOffset;
+				var runningMs = ((Date.now() - start)) - timeOffset * 1000;
 				var etaMs = runningMs * (totalIt / it);
 				var remainingMs = etaMs - runningMs;
 				var remainingMin = Math.floor(Math.floor(remainingMs / 1000) / 60);
