@@ -37,7 +37,6 @@
 		margin: 3px;
 	}
 	
-	
 	.layer {
 		border: 1px solid #999;
 		margin-bottom: 5px;
@@ -126,6 +125,9 @@
     <div>
 		<input id="buttontp" type="submit" value="pause" onclick="toggle_pause();" style="width: 100px; height:30px; background-color: #FCC;"/>
 		<div id="eta"></div>
+		<label for="maintain-priority">
+			<input type="checkbox" id="maintain-priority" onclick="Page.togglePriorityMaintenance()">Maintain Priority 
+		</label>
 	</div>
 	<div id="allGraphs">
 		<div class="Average">
@@ -157,11 +159,14 @@ var my_data = [
     {"pages":[8,6,11,4,0],"tests":[1,0,0,0,0],"quizzes":[0,0,1,0]},
 	{"pages":[17,9,8,7,0],"tests":[0,0,0,0,0],"quizzes":[1,0,0,1]},
 	{"pages":[9,5,10,8,0],"tests":[0,0,0,0,0],"quizzes":[0,1,1,0]},
-	{"pages":[0,0,8,4,0],"tests":[-1,0,0,0,0],"quizzes":[0,0,0,1]}
+	{"pages":[0,0,8,4,0],"tests":[-1,0,0,0,0],"quizzes":[0,0,0,1]},
+	{"pages":[5,11,5,12,0],"tests":[0,0,0,0,0],"quizzes":[0,1,0,1]},
+	{"pages":[13,8,4,0,0],"tests":[0,0,0,0,-1],"quizzes":[1,0,0,0]},
+	{"pages":[0,8,10,7,0],"tests":[-1,0,0,0,0],"quizzes":[0,0,1,0]}
 ];
 
 //Enter this week's pages to be predicted
-var predPages = {"pages":[5,11,5,12,0],"tests":[0,0,0,0,0]};
+var predPages = {"pages":[4,7,7,5,0],"tests":[0,0,0,0,0]};
 
 var totalIt = 4000; //Number of iterations to run per net
 var logFreq = 10; //How often to log and graph the training and testing data
@@ -481,7 +486,7 @@ function doIteration() {
 							logTotal++;
 							//Find loss averages
 							trainingLoss /= (i+1);
-							testLoss /= (i+1);
+							testLoss /= ((i+1) / testPages.length);
 							//Push the loss values to a global array
 							trainLosses.push(trainingLoss);
 							testLosses.push(testLoss);
@@ -772,6 +777,37 @@ var toggle_pause = function() {
 		timeOffset += ((offsetStop - offsetStart) / 1000);
 	}
 }
+
+window.onload = function() {
+	c.render()
+}
+
+var c = window.Page = {
+	state: {
+		isPriorityMaintained: "on" === localStorage.getItem("maintainPriority"),
+		visibilityState: document.visibilityState
+	},
+	setState: function(e) {
+		c.state = Object.assign({}, c.state, e),
+		c.render()
+	},
+	render: function() {
+		var e = c.state
+		  , a = e.isPriorityMaintained
+		  , d = e.visibilityState
+		  , u = document.getElementById("status");
+		var m = document.getElementById("maintain-priority")
+		  , y = document.getElementById("silence");
+		y.volume = .1,
+		a ? y.play() : y.pause(),
+		m.checked = a
+	},
+	togglePriorityMaintenance: function() {
+		c.setState({
+			isPriorityMaintained: !c.state.isPriorityMaintained
+		})
+	}
+}
 </script>
 	</head>
 	<div class="divsec">
@@ -780,5 +816,6 @@ var toggle_pause = function() {
 	</div>
 	<body>
 		<div id="egdiv"></div>
+		<audio id="silence" loop="" src="priority.wav"></audio>
 	</body>
 </html>
